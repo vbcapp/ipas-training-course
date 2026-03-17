@@ -2,8 +2,8 @@
 // 部署給不同企業時，只需修改這 2 個值（指向該企業的 Supabase 專案）
 // 企業名稱、Logo 等品牌資訊全部從資料庫 organization_settings 表讀取
 const SUPABASE_CONFIG = {
-    url: 'https://mwwvrapnjekxwxpyolcm.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13d3ZyYXBuamVreHd4cHlvbGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTM5MjgsImV4cCI6MjA4Nzg2OTkyOH0.kfzTvhZaaV7JPP38fu60b9sCTrBf5XTxYiT78Oov2lw'
+    url: 'https://sjnaycghlhuaaeeyldco.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqbmF5Y2dobGh1YWFlZXlsZGNvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTgxMjIsImV4cCI6MjA4OTI5NDEyMn0.Qa2fFn8amcbJboBW_fKAbCoY71q4chtLH4JgAnnC17g'
 };
 
 // ==================== 租戶工具（從 SUPABASE_CONFIG 衍生） ====================
