@@ -6,7 +6,8 @@
       "Bash(python refactor-classes.py:*)",
       "Bash(git checkout:*)",
       "Bash(ls -la c:/Users/USER/Desktop/text/ipas-training-course-tmp/*.html)",
-      "Bash(grep -E \"\\\\.html$\")"
+      "Bash(grep -E \"\\\\.html$\")",
+      "Bash(git fetch --prune)"
     ]
   }
 }
