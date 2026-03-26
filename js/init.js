@@ -18,7 +18,7 @@ function setupAuthListener() {
 
     client.auth.onAuthStateChange((event, session) => {
         const currentPage = window.location.pathname;
-        const isAuthPage = currentPage.endsWith('login.html') || currentPage.endsWith('login-page.html');
+        const isAuthPage = currentPage.endsWith('login.html') || currentPage.endsWith('login-page.html') || currentPage.endsWith('reset-password.html');
 
         if (event === 'SIGNED_OUT' && !isAuthPage) {
             // 被登出（可能是其他 tab、token 過期等）
@@ -86,7 +86,7 @@ async function initializeApp() {
         } else {
             // 如果不在登入頁面，才導向登入頁
             const currentPage = window.location.pathname;
-            if (!currentPage.endsWith('login.html') && !currentPage.endsWith('login-page.html')) {
+            if (!currentPage.endsWith('login.html') && !currentPage.endsWith('login-page.html') && !currentPage.endsWith('reset-password.html')) {
                 console.log('使用者未登入，請先登入');
                 window.location.href = 'login-page.html';
             }

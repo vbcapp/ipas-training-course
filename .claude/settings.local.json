@@ -4,7 +4,9 @@
       "Bash(python refactor-html.py:*)",
       "Bash(del \"c:\\\\Users\\\\USER\\\\Desktop\\\\text\\\\sandys-exam-card-system\\\\refactor-html.py\")",
       "Bash(python refactor-classes.py:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls -la c:/Users/USER/Desktop/text/ipas-training-course-tmp/*.html)",
+      "Bash(grep -E \"\\\\.html$\")"
     ]
   }
 }

@@ -550,6 +550,9 @@
         }
 
         // ==================== 忘記密碼 ====================
+        let forgotPasswordCooldown = 0;
+        let forgotPasswordTimer = null;
+
         async function handleForgotPassword() {
             const email = document.getElementById('login-email').value.trim();
 
@@ -563,6 +566,11 @@
                 return;
             }
 
+            if (forgotPasswordCooldown > 0) {
+                ModalSystem.alert('請稍候', `為了安全考量，請等待 ${forgotPasswordCooldown} 秒後再試。`);
+                return;
+            }
+
             try {
                 await apiService.initialize();
                 const { error } = await apiService.supabase.auth.resetPasswordForEmail(email, {
@@ -571,11 +579,35 @@
 
                 if (error) throw error;
 
+                // 成功後啟動 60 秒冷卻
+                startForgotPasswordCooldown(60);
                 ModalSystem.alert('已寄出重設信件', `密碼重設連結已寄到 ${email}，請前往信箱點擊連結。`);
             } catch (error) {
                 console.error('忘記密碼錯誤:', error);
-                ModalSystem.alert('發送失敗', '無法發送重設信件，請稍後再試。');
+
+                // 解析 Supabase 429 rate limit 的等待秒數
+                const waitMatch = error.message && error.message.match(/after (\d+) seconds/);
+                if (error.status === 429 || waitMatch) {
+                    const waitSec = waitMatch ? parseInt(waitMatch[1]) : 60;
+                    startForgotPasswordCooldown(waitSec);
+                    ModalSystem.alert('請稍候', `為了安全考量，請等待 ${waitSec} 秒後再重新發送。`);
+                } else {
+                    ModalSystem.alert('發送失敗', '無法發送重設信件，請稍後再試。');
+                }
             }
+        }
+
+        function startForgotPasswordCooldown(seconds) {
+            forgotPasswordCooldown = seconds;
+            if (forgotPasswordTimer) clearInterval(forgotPasswordTimer);
+            forgotPasswordTimer = setInterval(() => {
+                forgotPasswordCooldown--;
+                if (forgotPasswordCooldown <= 0) {
+                    forgotPasswordCooldown = 0;
+                    clearInterval(forgotPasswordTimer);
+                    forgotPasswordTimer = null;
+                }
+            }, 1000);
         }
 
         // ==================== 註冊邏輯 ====================

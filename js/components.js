@@ -66,9 +66,10 @@ const AppHeader = {
         return `
             <header class="flex-none bg-surface dark:bg-background-dark border-b-2 border-border-main px-4 py-4 flex items-center justify-between z-10">
                 <div class="flex items-center gap-2">
-                    <div class="bg-primary neo-border p-1 flex items-center justify-center">
+                    <a href="https://ipaslearningcard.zeabur.app/index.html" title="切換到單字卡"
+                        class="bg-primary neo-border p-1 flex items-center justify-center hover:bg-yellow-300 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer">
                         <span class="material-symbols-outlined text-black font-bold">terminal</span>
-                    </div>
+                    </a>
                     <h1 class="text-xl font-black tracking-tighter">${title}</h1>
                 </div>
                 ${adminBtnHtml}
