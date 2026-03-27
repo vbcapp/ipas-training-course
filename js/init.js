@@ -49,6 +49,15 @@ async function initializeApp() {
             currentUser = apiService.currentUser;
             console.log('使用者已登入:', currentUser.email, 'ID:', currentUser.id);
 
+            // Google OAuth 用戶回調後，儲存暱稱到 localStorage
+            if (!localStorage.getItem('userNickname') && currentUser.user_metadata) {
+                const meta = currentUser.user_metadata;
+                const nickname = meta.full_name || meta.name || currentUser.email?.split('@')[0] || 'User';
+                localStorage.setItem('userNickname', nickname);
+                localStorage.setItem('userConsent', 'true');
+                localStorage.setItem('loginTime', new Date().toISOString());
+            }
+
             // [Security Check] 白名單檢查 (針對 Google 登入等無法事前攔截的情況)
             if (typeof STUDENT_EMAILS !== 'undefined' && Array.isArray(STUDENT_EMAILS)) {
                 // 檢查是否為 Email 登入的用戶 (包含 Google SSO)

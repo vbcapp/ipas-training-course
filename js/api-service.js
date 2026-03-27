@@ -41,6 +41,11 @@ class ApiService {
             const { data: { user } } = await this.supabase.auth.getUser();
             this.currentUser = user;
 
+            // OAuth 用戶（如 Google 登入）回調後，確保 users 表有 profile
+            if (user && user.app_metadata?.provider === 'google') {
+                await this.ensureOAuthProfile(user);
+            }
+
             // 初始化角色管理器（從資料庫讀取角色）
             if (user && typeof RoleManager !== 'undefined') {
                 await RoleManager.init(this.supabase);
@@ -213,6 +218,39 @@ class ApiService {
         } catch (error) {
             return this._handleError(error);
         }
+    }
+
+    /**
+     * 使用 Google OAuth 登入/註冊
+     */
+    async signInWithGoogle() {
+        try {
+            const { data, error } = await this.supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/index.html')
+                }
+            });
+
+            if (error) throw error;
+            return { success: true, data };
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+
+    /**
+     * 處理 OAuth 回調後的用戶資料建立
+     * Google 登入成功後，確保 users 表有對應的 profile
+     */
+    async ensureOAuthProfile(user) {
+        if (!user) return;
+        const meta = user.user_metadata || {};
+        const nickname = meta.full_name || meta.name || meta.email?.split('@')[0] || 'User';
+        const email = user.email || meta.email || '';
+        const avatarUrl = meta.avatar_url || meta.picture || null;
+
+        await this._createUserProfile(user.id, nickname, email, avatarUrl);
     }
 
     /**
