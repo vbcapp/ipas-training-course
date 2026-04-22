@@ -77,7 +77,7 @@
             <div class="h-4 bg-primary border-b-[3px] border-black"></div>
             <div class="px-6 py-1 relative">
                 <div id="stats-badge-container" class="flex justify-end mb-1 empty:hidden"></div>
-                <h3 id="question-text" class="text-2xl font-black text-left leading-tight">
+                <h3 id="question-text" class="text-2xl font-black text-left leading-tight whitespace-pre-wrap">
                     載入中...
                 </h3>
                 <!-- 題目附圖按鈕（僅當題目有圖時顯示） -->
@@ -771,17 +771,65 @@
             const modal = document.getElementById('question-image-modal');
             const closeBtn = document.getElementById('question-image-close');
             const imgEl = document.getElementById('question-image-large');
+            const switcher = document.getElementById('question-image-switcher');
             if (!btn || !modal || !closeBtn || !imgEl) return;
 
             let zoomed = false;
-            const openModal = () => {
-                const src = btn.dataset.src;
-                if (!src) return;
-                imgEl.src = src;
+            let imageUrls = [];
+            let currentImgIdx = 0;
+
+            const resetZoom = () => {
                 zoomed = false;
                 imgEl.style.transform = 'scale(1)';
                 imgEl.classList.add('cursor-zoom-in');
                 imgEl.classList.remove('cursor-zoom-out');
+            };
+
+            const showImage = (idx) => {
+                if (!imageUrls[idx]) return;
+                currentImgIdx = idx;
+                imgEl.src = imageUrls[idx];
+                resetZoom();
+                renderSwitcher();
+            };
+
+            const renderSwitcher = () => {
+                if (!switcher) return;
+                if (imageUrls.length <= 1) {
+                    switcher.classList.add('hidden');
+                    switcher.classList.remove('flex');
+                    switcher.innerHTML = '';
+                    return;
+                }
+                switcher.classList.remove('hidden');
+                switcher.classList.add('flex');
+                switcher.innerHTML = imageUrls.map((_, idx) => {
+                    const isActive = idx === currentImgIdx;
+                    const cls = isActive
+                        ? 'bg-primary text-black shadow-neo-yellow'
+                        : 'bg-white text-black shadow-neo';
+                    return `<button type="button" data-img-idx="${idx}"
+                        class="${cls} neo-border rounded-full px-5 py-2 font-black text-base active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all">
+                        圖 ${idx + 1}
+                    </button>`;
+                }).join('');
+                switcher.querySelectorAll('button[data-img-idx]').forEach(b => {
+                    b.addEventListener('click', () => {
+                        const idx = parseInt(b.dataset.imgIdx, 10);
+                        if (!isNaN(idx)) showImage(idx);
+                    });
+                });
+            };
+
+            const openModal = () => {
+                const src = btn.dataset.src;
+                if (!src) return;
+                imageUrls = src.split(',').map(s => s.trim()).filter(Boolean);
+                if (imageUrls.length === 0) return;
+                currentImgIdx = 0;
+                imgEl.src = imageUrls[0];
+                resetZoom();
+                renderSwitcher();
                 modal.classList.add('is-open');
                 document.body.style.overflow = 'hidden';
             };
@@ -856,6 +904,7 @@
                 <span>關閉</span>
             </button>
         </div>
+        <div id="question-image-switcher" class="hidden justify-center flex-wrap gap-2 px-4 pb-2 shrink-0"></div>
         <div id="question-image-scroll" class="flex-grow overflow-auto px-4 pb-4 flex items-center justify-center">
             <img id="question-image-large" class="max-w-full cursor-zoom-in select-none" alt="題目附圖"
                 style="transition: transform 0.25s ease;" />
