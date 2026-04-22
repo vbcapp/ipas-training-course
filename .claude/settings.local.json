@@ -9,7 +9,16 @@
       "Bash(grep -E \"\\\\.html$\")",
       "Bash(git fetch --prune)",
       "mcp__supabase__list_tables",
-      "mcp__supabase__get_project"
+      "mcp__supabase__get_project",
+      "Bash(gh workflow run deploy.yml)",
+      "Bash(where gh)",
+      "Read(//c/Users/USER/Desktop/text/ipas-training-course-tmp/**)",
+      "Bash(ls -la /c/Users/USER/Desktop/text/ipas-training-course-tmp/*.html)",
+      "Read(//c/Users/USER/Desktop/text/ipas-training-course-tmp/js/**)",
+      "Read(//c/Users/USER/Desktop/text/ipas-training-course-tmp/sql/**)",
+      "Bash(grep -h \"^<h1\\\\|^<h2\\\\|data-title\" /c/Users/USER/Desktop/text/ipas-training-course-tmp/*.html)",
+      "Bash(ls -1 /c/Users/USER/Desktop/text/ipas-training-course-tmp/*.html)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }
