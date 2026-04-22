@@ -80,13 +80,26 @@
                 <h3 id="question-text" class="text-2xl font-black text-left leading-tight whitespace-pre-wrap">
                     載入中...
                 </h3>
-                <!-- 題目附圖按鈕（僅當題目有圖時顯示） -->
+                <!-- 題目附圖按鈕（單圖/多圖切換模式） -->
                 <button id="question-image-btn" type="button"
                     class="hidden mt-3 mb-1 w-full bg-primary text-black neo-border rounded-2xl py-4 px-4 font-black text-lg shadow-neo-yellow active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-3 question-image-pulse">
                     <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">image</span>
                     <span>點我看附圖（可放大）</span>
                     <span class="material-symbols-outlined text-2xl">zoom_in</span>
                 </button>
+                <!-- 題目附圖按鈕（sxs 雙按鈕模式：左右兩顆各開一張圖） -->
+                <div id="question-image-btn-group" class="hidden mt-3 mb-1 grid-cols-2 gap-2">
+                    <button id="question-image-btn-a" type="button"
+                        class="bg-primary text-black neo-border rounded-2xl py-3 px-3 font-black text-base shadow-neo-yellow active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 question-image-pulse min-w-0">
+                        <span class="material-symbols-outlined text-2xl shrink-0" style="font-variation-settings: 'FILL' 1;">image</span>
+                        <span id="question-image-btn-a-label" class="truncate"></span>
+                    </button>
+                    <button id="question-image-btn-b" type="button"
+                        class="bg-primary text-black neo-border rounded-2xl py-3 px-3 font-black text-base shadow-neo-yellow active:translate-x-1 active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-2 question-image-pulse min-w-0">
+                        <span class="material-symbols-outlined text-2xl shrink-0" style="font-variation-settings: 'FILL' 1;">image</span>
+                        <span id="question-image-btn-b-label" class="truncate"></span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -350,16 +363,50 @@
 
             questionText.textContent = question.question;
 
-            // 題目附圖按鈕：有 imageUrl 才顯示
+            // 題目附圖按鈕：依 imageUrl 格式顯示單顆或雙顆按鈕
             const imgBtn = document.getElementById('question-image-btn');
-            if (imgBtn) {
-                if (question.imageUrl) {
+            const imgBtnGroup = document.getElementById('question-image-btn-group');
+            const imgBtnA = document.getElementById('question-image-btn-a');
+            const imgBtnB = document.getElementById('question-image-btn-b');
+            const imgBtnALabel = document.getElementById('question-image-btn-a-label');
+            const imgBtnBLabel = document.getElementById('question-image-btn-b-label');
+            const hideSingleBtn = () => {
+                if (!imgBtn) return;
+                imgBtn.removeAttribute('data-src');
+                imgBtn.classList.add('hidden');
+            };
+            const hideGroupBtn = () => {
+                if (!imgBtnGroup) return;
+                imgBtnGroup.classList.add('hidden');
+                imgBtnGroup.classList.remove('grid');
+                if (imgBtnA) imgBtnA.removeAttribute('data-src');
+                if (imgBtnB) imgBtnB.removeAttribute('data-src');
+            };
+            if (question.imageUrl && question.imageUrl.startsWith('sxs:')) {
+                // 雙按鈕模式：sxs:<左標籤>|<左圖>|<右標籤>|<右圖>
+                const parts = question.imageUrl.slice(4).split('|').map(s => s.trim());
+                if (parts.length >= 4 && parts[1] && parts[3] && imgBtnGroup) {
+                    hideSingleBtn();
+                    imgBtnALabel.textContent = parts[0] || '共用附圖';
+                    imgBtnBLabel.textContent = parts[2] || '本題附圖';
+                    imgBtnA.dataset.src = parts[1];
+                    imgBtnB.dataset.src = parts[3];
+                    imgBtnGroup.classList.remove('hidden');
+                    imgBtnGroup.classList.add('grid');
+                } else {
+                    hideSingleBtn();
+                    hideGroupBtn();
+                }
+            } else if (question.imageUrl) {
+                // 單圖或逗號切換模式
+                hideGroupBtn();
+                if (imgBtn) {
                     imgBtn.dataset.src = question.imageUrl;
                     imgBtn.classList.remove('hidden');
-                } else {
-                    imgBtn.removeAttribute('data-src');
-                    imgBtn.classList.add('hidden');
                 }
+            } else {
+                hideSingleBtn();
+                hideGroupBtn();
             }
 
             // 若尚未產生洗牌順序，則依設定決定是否洗牌（每題只處理一次，重新渲染不重做）
@@ -768,15 +815,25 @@
         // 題目附圖 Modal：開關、縮放
         function setupQuestionImageModal() {
             const btn = document.getElementById('question-image-btn');
+            const btnA = document.getElementById('question-image-btn-a');
+            const btnB = document.getElementById('question-image-btn-b');
             const modal = document.getElementById('question-image-modal');
             const closeBtn = document.getElementById('question-image-close');
             const imgEl = document.getElementById('question-image-large');
             const switcher = document.getElementById('question-image-switcher');
-            if (!btn || !modal || !closeBtn || !imgEl) return;
+            if (!modal || !closeBtn || !imgEl) return;
 
             let zoomed = false;
             let imageUrls = [];
             let currentImgIdx = 0;
+            let activeTriggerBtn = null; // 記錄觸發 modal 的按鈕（用於載入失敗時隱藏）
+
+            // 解析 image_url 字串：逗號分隔 → 可切換多圖；其他 → 單張圖
+            const parseImageUrl = (raw) => {
+                if (!raw) return { urls: [] };
+                const urls = raw.split(',').map(s => s.trim()).filter(Boolean);
+                return { urls };
+            };
 
             const resetZoom = () => {
                 zoomed = false;
@@ -821,11 +878,14 @@
                 });
             };
 
-            const openModal = () => {
-                const src = btn.dataset.src;
+            const openModalFromBtn = (triggerBtn) => {
+                if (!triggerBtn) return;
+                const src = triggerBtn.dataset.src;
                 if (!src) return;
-                imageUrls = src.split(',').map(s => s.trim()).filter(Boolean);
-                if (imageUrls.length === 0) return;
+                activeTriggerBtn = triggerBtn;
+                const { urls } = parseImageUrl(src);
+                if (urls.length === 0) return;
+                imageUrls = urls;
                 currentImgIdx = 0;
                 imgEl.src = imageUrls[0];
                 resetZoom();
@@ -837,9 +897,12 @@
                 modal.classList.remove('is-open');
                 document.body.style.overflow = '';
                 imgEl.removeAttribute('src');
+                activeTriggerBtn = null;
             };
 
-            btn.addEventListener('click', openModal);
+            if (btn) btn.addEventListener('click', () => openModalFromBtn(btn));
+            if (btnA) btnA.addEventListener('click', () => openModalFromBtn(btnA));
+            if (btnB) btnB.addEventListener('click', () => openModalFromBtn(btnB));
             closeBtn.addEventListener('click', closeModal);
             // 點擊 modal 背景（非圖片本體）關閉
             modal.addEventListener('click', (e) => {
@@ -855,12 +918,12 @@
                 imgEl.classList.toggle('cursor-zoom-in', !zoomed);
                 imgEl.classList.toggle('cursor-zoom-out', zoomed);
             });
-            // 圖片載入失敗：隱藏按鈕並關閉 modal（忽略空 src 的假警報）
+            // 圖片載入失敗：隱藏觸發的按鈕並關閉 modal（忽略空 src 的假警報）
             imgEl.addEventListener('error', () => {
                 const currentSrc = imgEl.getAttribute('src');
                 if (!currentSrc) return; // 沒設 src 不算錯誤
                 console.warn('題目附圖載入失敗:', currentSrc);
-                btn.classList.add('hidden');
+                if (activeTriggerBtn) activeTriggerBtn.classList.add('hidden');
                 modal.classList.remove('is-open');
                 document.body.style.overflow = '';
                 imgEl.removeAttribute('src');
