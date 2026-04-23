@@ -111,6 +111,27 @@ function _initAppHeaderWhenReady() {
 }
 _initAppHeaderWhenReady();
 
+// ── Material Symbols 字體載入偵測 ─────────────────────────
+// 字體還沒到之前，vibe-style.css 會把 .material-symbols-outlined
+// 設成 visibility: hidden，避免使用者看到 "arrow_back" 之類 raw 文字。
+// 這裡在字體真的 ready（或逾時）後，把 .msymbol-ready 加到 <html>
+// 恢復顯示。逾時是安全網，防止字體載入失敗時 icon 永遠隱藏。
+(function waitForMaterialSymbols() {
+    const markReady = () => document.documentElement.classList.add('msymbol-ready');
+
+    // 安全網：3.5s 後無論如何都放開顯示（fallback 文字雖不美但至少可用）
+    const safety = setTimeout(markReady, 3500);
+
+    if (document.fonts && typeof document.fonts.load === 'function') {
+        document.fonts.load('24px "Material Symbols Outlined"')
+            .then(() => { clearTimeout(safety); markReady(); })
+            .catch(() => { clearTimeout(safety); markReady(); });
+    } else {
+        // 老瀏覽器：load 事件之後就放行
+        window.addEventListener('load', () => { clearTimeout(safety); markReady(); }, { once: true });
+    }
+})();
+
 // ── 預取常用子頁，換頁時 HTML 已在快取、感覺秒開 ────────────
 // 只在 idle 時預取，不搶主線程；Service Worker 會幫忙二次快取。
 (function prefetchSiblingPages() {

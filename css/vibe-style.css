@@ -161,6 +161,32 @@ body {
     font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 48;
 }
 
+/* 防護網：字體載入完成前（block period），把 ligature raw name
+   （"arrow_back"、"progress_activity"...）隱藏，避免在 3s block
+   timeout 或極慢網路下露出成為大片文字。JS 偵測字體 ready 後會把
+   .msymbol-ready 加到 <html>，移除這層限制。
+   同時 clamp 寬高：即使 visibility: hidden，fallback 文字的版面空間
+   仍會撐開容器（如 "progress_activity" 可達 10em 寬），必須限制。
+   Animation 是第二層安全網：若頁面沒載 components.js（例如
+   reset-password.html、preview/*.html），3.5s 後自動放行，避免
+   icon 永久隱藏。 */
+@keyframes _msymbol-safety-reveal {
+    to {
+        visibility: visible;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+html:not(.msymbol-ready) .material-symbols-outlined {
+    visibility: hidden;
+    overflow: hidden;
+    max-width: 1.2em;
+    max-height: 1.2em;
+    animation: _msymbol-safety-reveal 0.01s linear 3.5s forwards;
+}
+
 a.material-symbols-outlined {
     text-decoration: none;
     display: inline-block;
