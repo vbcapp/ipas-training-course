@@ -314,6 +314,8 @@
             if (cardId) {
                 // 儲存 cardId 供之後使用（結果頁、重測）
                 sessionStorage.setItem('currentCardId', cardId);
+                // 回到首頁時用來還原捲動位置，讓使用者看到剛剛做的那一題
+                sessionStorage.setItem('scrollToCardId', cardId);
                 await loadCardQuestions(cardId);
             } else {
                 // 沒有 cardId，使用預設題目

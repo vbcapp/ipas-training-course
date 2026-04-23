@@ -455,7 +455,61 @@ function renderCards(cards, container) {
 
     // 重新綁定編輯和刪除按鈕事件
     bindCardActions(cards);
+
+    // 嘗試還原捲動位置到上次做題的卡片
+    if (typeof window.scrollToLastViewedCard === 'function') {
+        window.scrollToLastViewedCard();
+    }
 }
+
+/**
+ * 還原首頁捲動位置到上次做題的卡片
+ *
+ * 將 sessionStorage 的 `scrollToCardId` 提升到 window-scoped 變數，
+ * 以便在初始載入期間（可能觸發多次 renderCards / applyFilter）都能重新捲動。
+ * 2 秒後自動失效，避免之後的 filter 操作誤觸發。
+ */
+(function () {
+    let pendingCardId = null;
+    let expireTimer = null;
+
+    function scheduleExpire(ms) {
+        if (expireTimer) clearTimeout(expireTimer);
+        expireTimer = setTimeout(() => { pendingCardId = null; expireTimer = null; }, ms);
+    }
+
+    // 只在有卡片容器的頁面（首頁）才消耗 sessionStorage，避免其他載入 init.js 的頁面誤吃 key
+    const hasCardsContainer = typeof document !== 'undefined' && document.getElementById('cards-container');
+    if (hasCardsContainer) {
+        pendingCardId = sessionStorage.getItem('scrollToCardId') || null;
+        if (pendingCardId) {
+            sessionStorage.removeItem('scrollToCardId');
+            // 預設 20 秒：卡片 API 載入在慢網路下可能需要數秒，不能太早清掉
+            scheduleExpire(20000);
+            // 等首次渲染完成後，額外保留 1.5 秒緩衝（讓篩選還原的 async 渲染也能補捲動），然後清除
+            window.addEventListener('appInitialized', () => scheduleExpire(1500), { once: true });
+        }
+    }
+
+    window.scrollToLastViewedCard = function () {
+        if (!pendingCardId) return;
+        const el = document.querySelector(`#cards-container a[data-card-id="${pendingCardId}"]`);
+        if (!el) return;
+        requestAnimationFrame(() => {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            el.classList.add('scroll-highlight');
+            setTimeout(() => el.classList.remove('scroll-highlight'), 1500);
+        });
+    };
+
+    window.primeScrollToCardFromStorage = function () {
+        const fresh = sessionStorage.getItem('scrollToCardId');
+        if (!fresh) return;
+        sessionStorage.removeItem('scrollToCardId');
+        pendingCardId = fresh;
+        scheduleExpire(3000);
+    };
+})();
 
 /**
  * 渲染單張卡片

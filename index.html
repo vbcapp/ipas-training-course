@@ -48,6 +48,17 @@
         rel="stylesheet" />
     <!-- Add LevelSystem Script -->
     <script src="js/level-system.js"></script>
+    <style>
+        /* 回到首頁時捲動到上次做題卡片的高亮動畫 */
+        @keyframes scroll-highlight-pulse {
+            0%   { box-shadow: 0 0 0 0 var(--color-primary-glow, rgba(255, 212, 0, 0.8)); }
+            50%  { box-shadow: 0 0 0 8px var(--color-primary-glow, rgba(255, 212, 0, 0.8)); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 212, 0, 0); }
+        }
+        .scroll-highlight {
+            animation: scroll-highlight-pulse 1.5s ease-out;
+        }
+    </style>
 </head>
 
 <body class="bg-surface dark:bg-background-dark text-text-base dark:text-white leading-relaxed">
@@ -481,6 +492,12 @@
                         if (typeof bindCardActions === 'function') {
                             bindCardActions(result.data.cards);
                         }
+
+                        // 篩選結果渲染完成後，再次嘗試捲動到上次做題的卡片
+                        // （避免 init.js 的 renderCards 捲動後被這裡的重渲染覆蓋）
+                        if (typeof window.scrollToLastViewedCard === 'function') {
+                            window.scrollToLastViewedCard();
+                        }
                     }
 
                     // 更新上方計數（總題數 + 答對題數）
@@ -560,7 +577,16 @@
 
             // bfcache 還原（瀏覽器上一頁按鈕，頁面從記憶體恢復不會重新執行 init.js）
             window.addEventListener('pageshow', (e) => {
-                if (e.persisted) window.reapplyIndexFilterFromStorage();
+                if (e.persisted) {
+                    if (typeof window.primeScrollToCardFromStorage === 'function') {
+                        window.primeScrollToCardFromStorage();
+                    }
+                    window.reapplyIndexFilterFromStorage();
+                    // 若沒有套用篩選，DOM 直接復用 bfcache 的內容，也要主動捲動
+                    if (typeof window.scrollToLastViewedCard === 'function') {
+                        window.scrollToLastViewedCard();
+                    }
+                }
             });
 
             // 編輯按鈕 (保留原本邏輯)
