@@ -158,13 +158,12 @@ const BottomNav = {
 };
 
 // 自動初始化（當 DOM 載入完成時）
+// 移除多餘的 setTimeout(0)：它會額外延後一個 tick，導致 bottom nav 晚一幀才出現。
+// data-active-page 是靜態屬性，DOMContentLoaded 時早已就位，不需要再延遲。
 document.addEventListener('DOMContentLoaded', () => {
-    // 延遲一點點，確保其他 script 已經設定好 data-active-page
-    setTimeout(() => {
-        const container = document.getElementById('bottom-nav');
-        if (container) {
-            const activePage = container.getAttribute('data-active-page');
-            BottomNav.init(activePage);
-        }
-    }, 0);
+    const container = document.getElementById('bottom-nav');
+    if (container) {
+        const activePage = container.getAttribute('data-active-page');
+        BottomNav.init(activePage);
+    }
 });

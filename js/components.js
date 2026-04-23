@@ -100,6 +100,43 @@ const AppHeader = {
 };
 
 // ── 自動初始化 ──────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    AppHeader.init();
-});
+// 若 DOM 已 ready（script 被 defer / 後插入等情況），直接同步 init，
+// 避免再等一個 DOMContentLoaded tick 造成 header 晚一幀注入。
+function _initAppHeaderWhenReady() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => AppHeader.init(), { once: true });
+    } else {
+        AppHeader.init();
+    }
+}
+_initAppHeaderWhenReady();
+
+// ── 預取常用子頁，換頁時 HTML 已在快取、感覺秒開 ────────────
+// 只在 idle 時預取，不搶主線程；Service Worker 會幫忙二次快取。
+(function prefetchSiblingPages() {
+    const run = () => {
+        const candidates = [
+            'index.html',
+            'weakness.html',
+            'rank.html',
+            'profile.html'
+        ];
+        const current = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+        candidates.forEach(href => {
+            if (href.toLowerCase() === current) return;
+            // 避免重複插入
+            if (document.querySelector(`link[rel="prefetch"][href="${href}"]`)) return;
+            const link = document.createElement('link');
+            link.rel = 'prefetch';
+            link.href = href;
+            document.head.appendChild(link);
+        });
+    };
+
+    if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(run, { timeout: 3000 });
+    } else {
+        // Safari fallback：page load 後 1 秒再做
+        window.addEventListener('load', () => setTimeout(run, 1000), { once: true });
+    }
+})();

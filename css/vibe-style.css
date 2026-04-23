@@ -743,3 +743,89 @@ a.material-symbols-outlined {
         transform: translateX(-50%) translateY(-30px) scale(0.9);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE TRANSITION / ANTI-JANK LAYER
+   目的：減少頁面切換時 FOUC、layout shift、動畫抖動。
+   這層 CSS 每頁都載入，一次改全站生效。
+   ═══════════════════════════════════════════════════════════ */
+
+/* 1. View Transitions API ─ 支援的瀏覽器（Chrome/Edge/新版 Safari）
+      會自動在 same-origin 導航時做 native cross-fade，根本消除跳動感 */
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 180ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2. FOUC 緩解：
+      Tailwind CDN runtime 生成 utility class 需要一小段時間，
+      這段時間使用者會看到「裸 HTML」。用短暫淡入遮蓋這個空檔。 */
+@keyframes vibe-page-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+body {
+    animation: vibe-page-fade-in 180ms ease-out both;
+}
+
+/* 3. 保留 JS 注入區塊的空間，避免 header 注入時整頁被往下推。
+      只在「還空的」狀態下佔位，注入後高度由實際內容決定。 */
+#app-header:empty {
+    display: block;
+    min-height: 72px;
+}
+
+/* bottom-nav 內部是 position:fixed，父 div 本身不佔高度，不需要佔位 */
+
+/* 4. 給常互動的元件 transform hint，讓瀏覽器提前建立合成層。
+      但不要亂下 will-change，只放真的會 transform 的元件。 */
+.vibe-card-quiz,
+.vibe-btn,
+.vibe-icon-btn,
+.vibe-square-btn,
+.vibe-social-btn,
+.vibe-filter-btn {
+    will-change: transform;
+}
+
+/* 5. 隱藏的元素停止跑無限動畫，節省 CPU / GPU 並減少整體抖動 */
+.hidden .animate-float,
+.hidden .capped-glow,
+.hidden .capped-gold-shimmer,
+.hidden .medal-glow,
+.hidden .capped-shimmer,
+.hidden .black-shimmer,
+[hidden] .animate-float,
+[hidden] .capped-glow,
+[hidden] .capped-gold-shimmer,
+[hidden] .medal-glow,
+[hidden] .capped-shimmer,
+[hidden] .black-shimmer {
+    animation-play-state: paused;
+}
+
+/* 6. 尊重使用者「減少動態效果」偏好（iOS/Android 都有），
+      同時也是 accessibility 要求 */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    body {
+        animation: none !important;
+    }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+}
