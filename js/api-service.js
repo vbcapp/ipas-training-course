@@ -395,6 +395,7 @@ class ApiService {
             localStorage.removeItem('userConsent');
             localStorage.removeItem('loginTime');
             localStorage.removeItem('user_device_id');
+            localStorage.removeItem('indexFilterState');
 
             // 清除 Supabase Auth Token (防止 SDK 自動恢復 Session)
             // Supabase 預設使用 key: sb-<project-ref>-auth-token

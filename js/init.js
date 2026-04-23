@@ -309,8 +309,15 @@ async function loadUserCards() {
             // 更新顯示：答對題數 / 總問題數
             updateCardCountUI(allCards.length, correctCount);
 
-            initFilterButtons();
+            // 先等章節按鈕長出來，再套用篩選，才能正確隱藏/顯示對應按鈕
+            await initFilterButtons();
             applyFilter(currentFilter);
+
+            // [持久化篩選] 若 localStorage 有保存的類別篩選，立即重新套用
+            // （會覆蓋上面的 applyFilter('all') 渲染結果，也會正確更新頂部章節按鈕的顯示）
+            if (typeof window.reapplyIndexFilterFromStorage === 'function') {
+                window.reapplyIndexFilterFromStorage();
+            }
         } else {
             console.error('載入卡片失敗:', result.error);
             showCardsError(container, '載入失敗，請重新整理頁面');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'exam-system-v3';
+const CACHE_NAME = 'exam-system-v7';
 
 // Only cache essential app shell files (use relative paths for subdirectory deployment)
 const BASE = self.registration.scope;

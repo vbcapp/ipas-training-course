@@ -245,6 +245,33 @@
             let groupedData = [];               // [{ subject, chapters: [...] }, ...]
             let currentSearchQuery = '';
 
+            // 從 localStorage 還原上次的篩選狀態（作答後回到主頁仍保留）
+            const FILTER_STORAGE_KEY = 'indexFilterState';
+            try {
+                const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed.pairs)) selectedPairs = new Set(parsed.pairs);
+                    if (typeof parsed.search === 'string') {
+                        currentSearchQuery = parsed.search;
+                        if (searchInput) searchInput.value = currentSearchQuery;
+                    }
+                }
+            } catch (e) {
+                localStorage.removeItem(FILTER_STORAGE_KEY);
+            }
+
+            function saveFilterState() {
+                if (selectedPairs.size === 0 && !currentSearchQuery) {
+                    localStorage.removeItem(FILTER_STORAGE_KEY);
+                    return;
+                }
+                localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
+                    pairs: Array.from(selectedPairs),
+                    search: currentSearchQuery
+                }));
+            }
+
             function pairKey(subject, chapter) { return subject + '|||' + chapter; }
             function parsePairKey(key) { const [s, c] = key.split('|||'); return { subject: s, chapter: c }; }
 
@@ -487,6 +514,7 @@
 
             // 3. Apply
             applyFilterBtn.onclick = () => {
+                saveFilterState();
                 applyFilter();
                 closeModal();
             };
@@ -494,6 +522,7 @@
             // 4. Clear
             clearFilterBtn.onclick = () => {
                 selectedPairs.clear();
+                saveFilterState();
                 renderCategoryList();
                 applyFilter();
             };
@@ -504,8 +533,34 @@
                 currentSearchQuery = e.target.value.trim();
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
+                    saveFilterState();
                     applyFilter(); // 搜尋也是一種篩選
                 }, 500);
+            });
+
+            // 還原篩選：暴露給 init.js 在 loadUserCards 完成後直接呼叫，
+            // 避免任何事件時序/競態問題。
+            window.reapplyIndexFilterFromStorage = () => {
+                try {
+                    const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed.pairs)) selectedPairs = new Set(parsed.pairs);
+                        if (typeof parsed.search === 'string') {
+                            currentSearchQuery = parsed.search;
+                            if (searchInput) searchInput.value = currentSearchQuery;
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
+                if (selectedPairs.size === 0 && !currentSearchQuery) return;
+                if (!apiService?.currentUser?.id) return;
+                applyFilter();
+            };
+
+            // bfcache 還原（瀏覽器上一頁按鈕，頁面從記憶體恢復不會重新執行 init.js）
+            window.addEventListener('pageshow', (e) => {
+                if (e.persisted) window.reapplyIndexFilterFromStorage();
             });
 
             // 編輯按鈕 (保留原本邏輯)
