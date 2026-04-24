@@ -275,15 +275,19 @@
             }
 
             function saveFilterState() {
-                if (selectedPairs.size === 0 && !currentSearchQuery) {
+                const topFilter = (typeof window.__indexCurrentFilter === 'string') ? window.__indexCurrentFilter : 'all';
+                if (selectedPairs.size === 0 && !currentSearchQuery && topFilter === 'all') {
                     localStorage.removeItem(FILTER_STORAGE_KEY);
                     return;
                 }
                 localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify({
                     pairs: Array.from(selectedPairs),
-                    search: currentSearchQuery
+                    search: currentSearchQuery,
+                    topFilter: topFilter
                 }));
             }
+            // Expose so init.js's top filter button click can persist the narrow-down state.
+            window.saveIndexFilterState = saveFilterState;
 
             function pairKey(subject, chapter) { return subject + '|||' + chapter; }
             function parsePairKey(key) { const [s, c] = key.split('|||'); return { subject: s, chapter: c }; }
@@ -545,6 +549,14 @@
             // 4. Clear
             clearFilterBtn.onclick = () => {
                 selectedPairs.clear();
+                // 清除 modal 時一併重置頂部快速篩選為「全部」，避免殘留狀態
+                window.__indexCurrentFilter = 'all';
+                const filterContainer = document.getElementById('filter-buttons');
+                if (filterContainer) {
+                    filterContainer.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    const allBtn = filterContainer.querySelector('.filter-btn[data-filter="all"]');
+                    if (allBtn) allBtn.classList.add('active');
+                }
                 saveFilterState();
                 renderCategoryList();
                 applyFilter();
@@ -564,6 +576,7 @@
             // 還原篩選：暴露給 init.js 在 loadUserCards 完成後直接呼叫，
             // 避免任何事件時序/競態問題。
             window.reapplyIndexFilterFromStorage = () => {
+                let savedTopFilter = 'all';
                 try {
                     const saved = localStorage.getItem(FILTER_STORAGE_KEY);
                     if (saved) {
@@ -573,12 +586,37 @@
                             currentSearchQuery = parsed.search;
                             if (searchInput) searchInput.value = currentSearchQuery;
                         }
+                        if (typeof parsed.topFilter === 'string') savedTopFilter = parsed.topFilter;
                     }
                 } catch (e) { /* ignore */ }
 
-                if (selectedPairs.size === 0 && !currentSearchQuery) return;
-                if (!apiService?.currentUser?.id) return;
-                applyFilter();
+                // 根據 modal 選擇同步頂部章節按鈕顯示/隱藏
+                updateChapterFilterButtons();
+
+                const hasModalFilter = selectedPairs.size > 0 || !!currentSearchQuery;
+                const hasTopFilter = savedTopFilter && savedTopFilter !== 'all';
+
+                if (hasTopFilter) {
+                    // 頂部快速篩選（章節/❤）視覺上覆蓋 modal 篩選，和點擊行為一致。
+                    // 還原「進入題目前的狀態」，例如 modal 是 (A,B) 但使用者點了 chapter:A 再進題目。
+                    const filterContainer = document.getElementById('filter-buttons');
+                    if (filterContainer) {
+                        const targetBtn = Array.from(filterContainer.querySelectorAll('.filter-btn'))
+                            .find(b => b.getAttribute('data-filter') === savedTopFilter);
+                        if (targetBtn) {
+                            filterContainer.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                            targetBtn.classList.add('active');
+                            if (typeof window.applyFilter === 'function') {
+                                window.applyFilter(savedTopFilter);
+                            }
+                            return;
+                        }
+                    }
+                }
+
+                if (hasModalFilter && apiService?.currentUser?.id) {
+                    applyFilter();
+                }
             };
 
             // bfcache 還原（瀏覽器上一頁按鈕，頁面從記憶體恢復不會重新執行 init.js）

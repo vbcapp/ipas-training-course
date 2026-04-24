@@ -378,6 +378,12 @@ async function initFilterButtons() {
                 b.classList.remove('active');
             });
             this.classList.add('active');
+
+            // 持久化頂部快速篩選，這樣從題目頁返回時能還原當下的篩選狀態
+            // （例如 modal 為 (A,B) 但使用者點了 chapter:A 再進題目，返回時仍是 chapter:A）
+            if (typeof window.saveIndexFilterState === 'function') {
+                window.saveIndexFilterState();
+            }
         });
     });
 }
@@ -387,6 +393,8 @@ async function initFilterButtons() {
  */
 function applyFilter(filter) {
     currentFilter = filter;
+    // 暴露給 index.html 的 saveFilterState/restore 流程讀取
+    window.__indexCurrentFilter = filter;
     const container = document.getElementById('cards-container');
     if (!container) return;
 
