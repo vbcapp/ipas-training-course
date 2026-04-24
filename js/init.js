@@ -177,7 +177,7 @@ function updateUserUI(userData) {
             const nextLevel = levelState.actualLevel + 1;
             xpTextEl.textContent = ` ➔   Lv. ${nextLevel} [ 尚未解鎖 🔒 ]`;
         } else {
-            xpTextEl.textContent = `${levelState.progressInLevel}/${levelState.xpForNextLevel}`;
+            xpTextEl.textContent = `${levelState.progressInLevel.toLocaleString()} / ${levelState.xpForNextLevel.toLocaleString()}`;
         }
     }
 
@@ -186,6 +186,7 @@ function updateUserUI(userData) {
     if (xpBarEl) {
         // 設定寬度
         xpBarEl.style.width = `${Math.min(levelState.displayProgress, 100)}%`;
+        xpBarEl.style.visibility = 'visible';
 
         // 處理金色閃爍 (Capped State)
         if (levelState.isCapped) {

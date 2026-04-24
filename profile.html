@@ -97,10 +97,10 @@
          <div class="max-w-md mx-auto">
             <div class="flex justify-between items-end mb-1">
                <span class="text-xs font-black uppercase tracking-wider">XP POINTS</span>
-               <span id="user-xp-text" class="text-xs font-black">0 / 0</span>
+               <span id="user-xp-text" class="text-xs font-black"></span>
             </div>
             <div class="h-6 w-full border-4 border-black bg-white">
-               <div id="user-xp-bar" class="h-full bg-black border-r-4 border-black" style="width: 0%"></div>
+               <div id="user-xp-bar" class="h-full bg-black border-r-4 border-black" style="width: 0%; visibility: hidden;"></div>
             </div>
          </div>
       </section>
@@ -1329,6 +1329,7 @@
          const xpBar = document.getElementById('user-xp-bar');
          if (xpBar) {
             xpBar.style.width = `${Math.min(levelState.displayProgress, 100)}%`;
+            xpBar.style.visibility = 'visible';
 
             // 處理金色閃爍 (Capped State)
             if (levelState.isCapped) {
