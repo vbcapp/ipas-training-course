@@ -490,6 +490,10 @@
                             container.innerHTML = result.data.cards.map(c => `<div>${c.english_term}</div>`).join('');
                         }
 
+                        // 同步「下一題」導覽清單：讓做題時的下一張卡片遵循目前篩選結果，
+                        // 而非 init.js 首次載入寫入的全量清單。
+                        sessionStorage.setItem('currentCardIds', JSON.stringify(result.data.cards.map(c => c.id)));
+
                         // 重新綁定事件 (愛心、編輯、刪除)
                         if (typeof bindCardActions === 'function') {
                             bindCardActions(result.data.cards);
